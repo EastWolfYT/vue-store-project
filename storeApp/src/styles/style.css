@@ -2,6 +2,11 @@ body {
     margin: 0;
     padding: 0;
     background: #efefef;
+    overflow-x: hidden;
+}
+
+html {
+    overflow-x: hidden;
 }
 
 * {

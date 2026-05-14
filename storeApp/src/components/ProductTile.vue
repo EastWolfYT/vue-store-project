@@ -145,4 +145,18 @@ export default {
     width: 100px;
     height: 100px;
 }
+
+@media (max-width: 480px) {
+    .productTile {
+        padding: 10px 16px;
+        max-width: calc(100vw - 32px);
+    }
+    .productName {
+        font-size: 22px;
+    }
+    .imageWrapper {
+        width: 120px;
+        height: 120px;
+    }
+}
 </style>
