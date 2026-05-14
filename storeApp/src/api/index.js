@@ -1,72 +1,212 @@
-import axios from 'axios'
+const wait = () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 200 + Math.random() * 100)
+  })
 
-// funkcja pomocnicza do pobierania danych z dowolnego adresu
-const get = (url, config = {}) =>
-  // new Promise żeby ręcznie opakować pobieranie danych i pozniej dodac opoznienie setTimeoutem
-  // update: bez configu nie przekaze parametrow do axiosa
-  new Promise((resolve, reject) => {
-    // sztuczne opóźnienie, przez co potem można pokazać loader
-    setTimeout(() => {
-        axios.get(url, {
-          ...config,
-          withCredentials: true
-        })
-          .then((response) => {
-            console.log('data', response.data)
-            resolve(response.data) // pobieranie sie udało zwracamy dane
-          })
-          .catch((error) => {
-            reject(error)
-          })
-      },
-      200 + Math.random() * 100,
+const DATA_URL = `${import.meta.env.BASE_URL}data/data.json`
+
+const getData = async () => {
+  await wait()
+
+  const response = await fetch(DATA_URL)
+
+  if (!response.ok) {
+    throw new Error('Nie udało się pobrać danych demo')
+  }
+
+  return response.json()
+}
+
+const getArray = (data, key) => {
+  if (Array.isArray(data[key])) {
+    return data[key]
+  }
+
+  return []
+}
+
+const getPromotions = async () => {
+  const data = await getData()
+  return getArray(data, 'promotions')
+}
+
+const getPromotion = async (id) => {
+  const data = await getData()
+  const promotions = getArray(data, 'promotions')
+
+  return promotions.find((promotion) => String(promotion.id) === String(id))
+}
+
+const getProduct = async (id) => {
+  const data = await getData()
+  const products = getArray(data, 'products')
+
+  return products.find((product) => String(product.id) === String(id))
+}
+
+const getProducts = async (options = {}) => {
+  const data = await getData()
+  let products = [...getArray(data, 'products')]
+
+  if (options.name) {
+    products = products.filter((product) =>
+      String(product.name || '')
+        .toLowerCase()
+        .includes(String(options.name).toLowerCase()),
     )
+  }
+
+  if (options.category) {
+    products = products.filter((product) =>
+      String(product.category || '').toLowerCase() === String(options.category).toLowerCase(),
+    )
+  }
+
+  if (options._sort) {
+    const sortKey = options._sort
+    const order = options._order === 'desc' ? -1 : 1
+
+    products.sort((a, b) => {
+      if (a[sortKey] > b[sortKey]) return order
+      if (a[sortKey] < b[sortKey]) return -order
+      return 0
+    })
+  }
+
+  return products
+}
+
+const registerUser = async (userObject) => {
+  await wait()
+
+  localStorage.setItem('demoUser', JSON.stringify(userObject))
+  localStorage.setItem('currentUser', JSON.stringify(userObject))
+
+  return {
+    success: true,
+    user: userObject,
+  }
+}
+
+const loginUser = async (userObject) => {
+  await wait()
+
+  const savedUser = JSON.parse(localStorage.getItem('demoUser') || 'null')
+
+  const user = savedUser || {
+    email: userObject.email,
+    name: 'Demo User',
+  }
+
+  localStorage.setItem('currentUser', JSON.stringify(user))
+
+  return {
+    success: true,
+    user,
+  }
+}
+
+const logoutUser = async () => {
+  await wait()
+
+  localStorage.removeItem('currentUser')
+
+  return {
+    success: true,
+  }
+}
+
+const getCurrentUser = async () => {
+  await wait()
+
+  return JSON.parse(localStorage.getItem('currentUser') || 'null')
+}
+
+const getCategories = async () => {
+  const data = await getData()
+
+  if (Array.isArray(data.categories)) {
+    return data.categories
+  }
+
+  const products = getArray(data, 'products')
+  const categories = [...new Set(products.map((product) => product.category).filter(Boolean))]
+
+  return categories
+}
+
+const getSimilarProducts = async (category, id) => {
+  const data = await getData()
+  const products = getArray(data, 'products')
+
+  return products.filter((product) => {
+    return String(product.category) === String(category) && String(product.id) !== String(id)
+  })
+}
+
+const getCartFromStorage = () => {
+  return JSON.parse(localStorage.getItem('cart') || '[]')
+}
+
+const saveCartToStorage = (cart) => {
+  localStorage.setItem('cart', JSON.stringify(cart))
+}
+
+const getCart = async () => {
+  await wait()
+
+  return getCartFromStorage()
+}
+
+const postCartProduct = async (productObject) => {
+  await wait()
+
+  const cart = getCartFromStorage()
+
+  const existingProduct = cart.find((item) => String(item.id) === String(productObject.id))
+
+  if (existingProduct) {
+    existingProduct.quantity = Number(existingProduct.quantity || 1) + 1
+  } else {
+    cart.push({
+      ...productObject,
+      quantity: productObject.quantity || 1,
+    })
+  }
+
+  saveCartToStorage(cart)
+
+  return cart
+}
+
+const deleteCartProduct = async (productId) => {
+  await wait()
+
+  const cart = getCartFromStorage().filter((item) => String(item.id) !== String(productId))
+
+  saveCartToStorage(cart)
+
+  return cart
+}
+
+const updateCartProduct = async (productId, quantity) => {
+  await wait()
+
+  const cart = getCartFromStorage().map((item) => {
+    if (String(item.id) === String(productId)) {
+      return {
+        ...item,
+        quantity,
+      }
+    }
+
+    return item
   })
 
-const post = (url, userObject) =>
-  new Promise((resolve, reject) => {
-    setTimeout(() => {
-      axios
-        .post(url, userObject, { withCredentials: true }) // nagłówek obsługiwany na serwerze, withCridentials jest dokładnie powiązane z corsOptions na serwerze
-        .then((response) => {
-          console.log('data', response.data)
-          resolve(response.data) // zwracanie odpowiedzi z serwera do widoku
-        })
-        .catch((error) => {
-          reject(error)
-        })
-    }, 1000) 
-  })
+  saveCartToStorage(cart)
 
-const getPromotions = () => get('http://localhost:3000/promotions') // pobieranko promocji z serwera express
-
-const getPromotion = (id) => get(`http://localhost:3000/promotion/${id}`) // pobieranko jednej promocji z serwera
-
-const getProduct = (id) => get(`http://localhost:3000/product/${id}`) // pobieranko jednego produktu z serwera
-
-const getProducts = (options = {}) => get(`http://localhost:3000/products`, { params: options }) // pobieranko produktów z serwera (update: teraz klient ma móc wysłać np. taki obiekt: { name: "con", category: "LAPTOP", _sort: "price", _order: "asc" }, a axios moze zmienic to na adres typu: /products?name=con&category=LAPTOP&_sort=price&_order=asc)
-
-const registerUser = (userObject) => post(`http://localhost:3000/createUser`, userObject); // kwysyla dane z formularza rejestracji do serwera
-
-const loginUser = (userObject) => post(`http://localhost:3000/loginUser`, userObject); // wysyla dane z formularza logowania do serwera
-
-const logoutUser = () => post(`http://localhost:3000/logoutUser`); // wywoła wylogowanie na serwerze i usunięcie cookie
-
-const getCurrentUser = () => get(`http://localhost:3000/getCurrentUser`); // pobiera aktualnie zalogowanego usera z serwera na podstawie cookie
-
-const getCategories = () => get(`http://localhost:3000/categories`); // pobieranko kategorii z serwera
-
-const getSimilarProducts = (category, id) => get(`http://localhost:3000/similar/${category}`, {
-  params: { id }
-}); // pobieranko similar productow z serwera i id
-
-const getCart = () => get(`http://localhost:3000/cart`) // pobiera aktualny stan z koszyka do serwera
-
-const postCartProduct = (productObject) => post(`http://localhost:3000/postCartProduct`, productObject) // dodaje produkt do koszyka
-
-const deleteCartProduct = (productId) => post(`http://localhost:3000/deleteCartProduct`, productId) // usuwa produkt z koszyka
-
-const updateCartProduct = (productId, quantity) => post(`http://localhost:3000/updateCartProduct`, { productId, quantity }) // zmienia ilosc produktow w koszyku
+  return cart
+}
 
 export {
   getPromotions,
@@ -82,6 +222,5 @@ export {
   getCart,
   postCartProduct,
   deleteCartProduct,
-  updateCartProduct
-  // tu będą pozostałe metody
+  updateCartProduct,
 }
