@@ -363,4 +363,19 @@ export default {
     transform: translateX(20px);
     opacity: 0;
 }
+
+@media (max-width: 480px) {
+    .cartToggleButton {
+        font-size: 14px;
+        padding: 8px 10px;
+        min-width: 60px;
+    }
+    .cartPopup {
+        position: fixed;
+        top: 60px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+}
 </style>

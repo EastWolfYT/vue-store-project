@@ -183,4 +183,47 @@ header {
     background: linear-gradient(180deg, #5b93ff 0%, #36a3ff 100%);
     transform: scale(1.04);
 }
+
+@media (max-width: 768px) {
+    .navElement {
+        font-size: 15px;
+        padding: 14px 14px;
+    }
+    .ulLeft {
+        margin-left: 12px;
+    }
+    .ulRight {
+        margin: 0 16px 0 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .navBar {
+        flex-wrap: wrap;
+    }
+    .ulLeft {
+        margin-left: 6px;
+    }
+    .ulRight {
+        margin: 0 6px 4px 0;
+    }
+    .navElement {
+        font-size: 13px;
+        padding: 10px 8px;
+    }
+    .registerElement {
+        margin-left: 6px;
+        padding: 8px 8px;
+        font-size: 13px;
+    }
+    .userEmail {
+        font-size: 13px;
+        padding: 0 4px;
+    }
+    .logoutButton {
+        margin-left: 6px;
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+}
 </style>

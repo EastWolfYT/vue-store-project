@@ -92,4 +92,19 @@ export default {
     margin: 0;
     text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.51);
 }
+
+@media (max-width: 1350px) {
+    .promotionTile {
+        width: 95%;
+    }
+}
+
+@media (max-width: 600px) {
+    .promotionHeader {
+        font-size: 26px;
+    }
+    .promotionDescription {
+        font-size: 16px;
+    }
+}
 </style>

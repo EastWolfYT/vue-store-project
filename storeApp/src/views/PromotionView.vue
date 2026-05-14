@@ -159,4 +159,31 @@ body {
     transform: translate(-50%, -50%);
     z-index: 3;
 }
+
+@media (max-width: 900px) {
+    .promoLongDescription,
+    .promoFinish,
+    .promoProducts {
+        width: 90%;
+    }
+    .promoProducts {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .promoLongDescription,
+    .promoFinish,
+    .promoProducts {
+        width: 96%;
+    }
+    .promoTop h1 {
+        font-size: 22px;
+    }
+    .promoTop h3 {
+        font-size: 15px;
+    }
+}
 </style>

@@ -218,4 +218,21 @@ button:disabled {
     margin: 40px 0 140px 0;
     color: #333;
 }
+
+@media (max-width: 600px) {
+    .searchForm {
+        flex-wrap: wrap;
+        padding: 0 12px;
+        gap: 8px;
+    }
+    .searchForm input,
+    .searchForm select,
+    .searchForm button {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .notFoundInfo {
+        font-size: 28px;
+    }
+}
 </style>

@@ -426,4 +426,27 @@ export default {
     font-size: 20px;
     color: #44576b;
 }
+
+@media (max-width: 600px) {
+    .cartViewCont {
+        width: 96%;
+    }
+    .deliveryForm {
+        width: 100%;
+    }
+    .cartProductRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 10px 12px;
+    }
+    .cartProductCenter,
+    .cartProductRight {
+        text-align: left;
+        padding-right: 0;
+    }
+    .cartProductRight {
+        justify-content: flex-start;
+    }
+}
 </style>

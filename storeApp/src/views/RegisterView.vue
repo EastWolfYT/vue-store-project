@@ -208,4 +208,11 @@ button:disabled {
     color: #333;
     margin-bottom: 20px;
 }
+
+@media (max-width: 420px) {
+    .registerBox {
+        width: 92%;
+        padding: 25px 20px;
+    }
+}
 </style>

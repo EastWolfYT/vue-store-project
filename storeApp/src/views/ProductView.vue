@@ -98,4 +98,14 @@ export default {
   justify-content: space-between;
   gap: 20px;
 }
+
+@media (max-width: 768px) {
+    .productViewCont {
+        width: 92%;
+    }
+    .similarProducts {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
 </style>

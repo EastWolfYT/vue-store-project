@@ -163,4 +163,28 @@ export default {
     background: linear-gradient(180deg, #5b93ff 0%, #36a3ff 100%);
     transform: scale(1.04);
 }
+
+@media (max-width: 900px) {
+    .productBig {
+        flex-direction: column;
+    }
+    .productBigImageCont {
+        width: 100%;
+        min-width: unset;
+        margin-top: 0;
+        height: 280px;
+    }
+    .productBigDescription {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .productBigName {
+        font-size: 26px;
+    }
+    .productBigImageCont {
+        height: 220px;
+    }
+}
 </style>
