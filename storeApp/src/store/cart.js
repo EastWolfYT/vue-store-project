@@ -3,69 +3,65 @@ import { getCart, postCartProduct, deleteCartProduct, updateCartProduct } from "
 const cart = {
     state() {
         return {
-            cartList: [], // lista produktów ktore aktualnie sa w koszyku
-            cartLoading: false, // stan ladowania koszyka
-            cartError: null // errorek
+            cartList: [],
+            cartLoading: false,
+            cartError: null
         }
     },
 
     mutations: {
-        // ustawia nowa liste koszyka
         SET_CART_LIST(state, newCartList) {
-            state.cartList = newCartList
+            state.cartList = Array.isArray(newCartList) ? newCartList : []
         },
-        // ustawia ladowanko
+
         SET_CART_LOADING(state, loading) {
             state.cartLoading = loading
         },
-        // ustawia errorek
+
         SET_CART_ERROR(state, error) {
             state.cartError = error
         }
     },
 
     getters: {
-        // zwraca liste koszyka
         GET_CART_LIST(state) {
-            return state.cartList
+            return Array.isArray(state.cartList) ? state.cartList : []
         },
-        // zwraca stan loadingu
+
         GET_CART_LOADING(state) {
             return state.cartLoading
         },
-        // zwraca errorek
+
         GET_CART_ERROR(state) {
             return state.cartError
         }
     },
 
     actions: {
-        // pobiera caly koszyk z serwera
         FETCH_CART({ commit }) {
-            commit("SET_CART_LOADING", true) // ustawia loading na true
-            commit("SET_CART_ERROR", null) // czysci blad
+            commit("SET_CART_LOADING", true)
+            commit("SET_CART_ERROR", null)
 
             return getCart()
                 .then((data) => {
-                    commit("SET_CART_LIST", data.products) // jak sie uda to wpisuje produkty do carList
+                    commit("SET_CART_LIST", data.products || [])
                 })
                 .catch(() => {
-                    commit("SET_CART_ERROR", "Nie udało się pobrać koszyka.") // jak sie nie uda to errorek
+                    commit("SET_CART_ERROR", "Nie udało się pobrać koszyka.")
+                    commit("SET_CART_LIST", [])
                 })
                 .finally(() => {
-                    commit("SET_CART_LOADING", false) // loading na false
+                    commit("SET_CART_LOADING", false)
                 })
         },
 
-        // dodaje produkt do koszyka, productObject to caly produkt ktory chce dodac
         ADD_CART_PRODUCT({ commit }, productObject) {
-            commit("SET_CART_LOADING", true) // wlaczanie loadingu
-            commit("SET_CART_ERROR", null) // czyszczenie errorka
+            commit("SET_CART_LOADING", true)
+            commit("SET_CART_ERROR", null)
 
-            // wysyla produkt do serwera
             return postCartProduct(productObject)
                 .then((data) => {
-                    commit("SET_CART_LIST", data.products) // serwer odsyla nowy stan koszyka a store wpisuje go do carList
+                    commit("SET_CART_LIST", data.products || [])
                 })
                 .catch(() => {
                     commit("SET_CART_ERROR", "Nie udało się dodać produktu do koszyka.")
@@ -75,14 +71,13 @@ const cart = {
                 })
         },
 
-        // usuwa produkt z koszyka po productId ktory chce usunac
         DELETE_CART_PRODUCT({ commit }, productId) {
             commit("SET_CART_LOADING", true)
             commit("SET_CART_ERROR", null)
 
             return deleteCartProduct(productId)
                 .then((data) => {
-                    commit("SET_CART_LIST", data.products)
+                    commit("SET_CART_LIST", data.products || [])
                 })
                 .catch(() => {
                     commit("SET_CART_ERROR", "Nie udało się usunąć produktu z koszyka.")
@@ -92,14 +87,13 @@ const cart = {
                 })
         },
 
-        // zmienia ilosc produktu w koszyku, productId to produkt ktory sie zmienia a quantity to ile sztuk
         UPDATE_CART_PRODUCT({ commit }, { productId, quantity }) {
             commit("SET_CART_LOADING", true)
             commit("SET_CART_ERROR", null)
 
             return updateCartProduct(productId, quantity)
                 .then((data) => {
-                    commit("SET_CART_LIST", data.products)
+                    commit("SET_CART_LIST", data.products || [])
                 })
                 .catch(() => {
                     commit("SET_CART_ERROR", "Nie udało się zaktualizować produktu w koszyku.")
@@ -109,21 +103,16 @@ const cart = {
                 })
         },
 
-        // clearuje mi koszyk
-        CLEAR_CART({ state, dispatch }) {
-            // bierze mi id z koszyka ...new Set usuwa duplikaty
-            // uniqueIds ma unikalne duplikaty
-            const uniqueIds = [...new Set(state.cartList.map(product => product.id))]
+        CLEAR_CART({ commit }) {
+            commit("SET_CART_LOADING", true)
+            commit("SET_CART_ERROR", null)
 
-            const promises = uniqueIds.map(productId => {
-                // każdy produkt ustawia na 0 sztuk czyli usuwa z koszyka
-                return dispatch("UPDATE_CART_PRODUCT", {
-                    productId,
-                    quantity: 0
-                })
-            })
+            localStorage.removeItem("vue-store-cart")
+            commit("SET_CART_LIST", [])
 
-            return Promise.all(promises)
+            commit("SET_CART_LOADING", false)
+
+            return Promise.resolve()
         }
     }
 }

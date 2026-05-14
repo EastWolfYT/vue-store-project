@@ -127,7 +127,9 @@ export default {
 
         // liczy sume wszystkich cen
         totalPrice() {
-            return this.cartList.reduce((sum, product) => sum + product.price, 0).toFixed(2)
+            return this.groupedCart
+                .reduce((sum, product) => sum + product.price * product.quantity, 0)
+                .toFixed(2)
         },
 
         groupedCart() {

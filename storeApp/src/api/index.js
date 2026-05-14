@@ -4,13 +4,9 @@ const wait = () =>
   })
 
 const DATA_URL = `${import.meta.env.BASE_URL}data/data.json`
-
-const DEMO_USER = {
-  id: 1,
-  name: 'Demo User',
-  email: 'demo@example.com',
-  login: 'demo',
-}
+const USERS_KEY = 'vue-store-users'
+const CURRENT_USER_KEY = 'vue-store-current-user'
+const CART_KEY = 'vue-store-cart'
 
 const getData = async () => {
   await wait()
@@ -24,221 +20,197 @@ const getData = async () => {
   return response.json()
 }
 
-const getArray = (data, key) => {
-  if (Array.isArray(data[key])) {
-    return data[key]
+const getUsers = () => {
+  try {
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]')
+    return Array.isArray(users) ? users : []
+  } catch {
+    return []
   }
-
-  return []
 }
 
-const makeListResponse = (array) => {
-  const list = Array.isArray(array) ? array : []
-
-  list.products = list
-  list.promotions = list
-  list.categories = list
-  list.items = list
-  list.data = list
-  list.list = list
-  list.results = list
-  list.total = list.length
-  list.count = list.length
-  list.totalCount = list.length
-
-  return list
+const saveUsers = (users) => {
+  localStorage.setItem(USERS_KEY, JSON.stringify(Array.isArray(users) ? users : []))
 }
 
-const makeCartResponse = (cart) => {
-  const list = Array.isArray(cart) ? cart : []
+const getCurrentUserFromStorage = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || 'null')
+    return user && typeof user === 'object' ? user : null
+  } catch {
+    return null
+  }
+}
 
-  list.cart = list
-  list.cartList = list
-  list.products = list
-  list.items = list
-  list.data = list
-  list.list = list
-  list.results = list
-  list.total = list.length
-  list.count = list.length
-  list.totalCount = list.length
-
-  return list
+const saveCurrentUser = (user) => {
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
 }
 
 const getCartFromStorage = () => {
   try {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-
-    if (Array.isArray(cart)) {
-      return cart
-    }
-
-    return []
+    const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+    return Array.isArray(cart) ? cart : []
   } catch {
     return []
   }
 }
 
 const saveCartToStorage = (cart) => {
-  localStorage.setItem('cart', JSON.stringify(Array.isArray(cart) ? cart : []))
-}
-
-const getCurrentUserFromStorage = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('currentUser') || 'null')
-
-    if (user && typeof user === 'object') {
-      return {
-        ...DEMO_USER,
-        ...user,
-      }
-    }
-
-    return DEMO_USER
-  } catch {
-    return DEMO_USER
-  }
-}
-
-const saveCurrentUser = (user) => {
-  localStorage.setItem(
-    'currentUser',
-    JSON.stringify({
-      ...DEMO_USER,
-      ...user,
-    }),
-  )
+  localStorage.setItem(CART_KEY, JSON.stringify(Array.isArray(cart) ? cart : []))
 }
 
 const getPromotions = async () => {
   const data = await getData()
-  return makeListResponse(getArray(data, 'promotions'))
+
+  return {
+    promotions: Array.isArray(data.promotions) ? data.promotions : [],
+  }
 }
 
 const getPromotion = async (id) => {
   const data = await getData()
-  const promotions = getArray(data, 'promotions')
+  const promotions = Array.isArray(data.promotions) ? data.promotions : []
 
-  return promotions.find((promotion) => String(promotion.id) === String(id)) || null
+  return promotions.find((promotion) => String(promotion.id) === String(id)) || {}
 }
 
 const getProduct = async (id) => {
   const data = await getData()
-  const products = getArray(data, 'products')
+  const products = Array.isArray(data.products) ? data.products : []
 
-  return products.find((product) => String(product.id) === String(id)) || null
+  return products.find((product) => String(product.id) === String(id)) || {}
 }
 
 const getProducts = async (options = {}) => {
   const data = await getData()
-  let products = [...getArray(data, 'products')]
+  let products = Array.isArray(data.products) ? [...data.products] : []
 
-  if (options.name) {
+  const name = options.name || ''
+  const category = options.category || ''
+  const sort = options._sort || ''
+  const order = options._order || 'asc'
+  const page = Number(options._page) || 1
+  const limit = Number(options._limit) || products.length || 1
+
+  if (name) {
     products = products.filter((product) =>
       String(product.name || '')
         .toLowerCase()
-        .includes(String(options.name).toLowerCase()),
+        .includes(String(name).toLowerCase()),
     )
   }
 
-  if (options.category) {
-    products = products.filter(
-      (product) =>
-        String(product.category || '').toLowerCase() === String(options.category).toLowerCase(),
-    )
+  if (category) {
+    products = products.filter((product) => String(product.category) === String(category))
   }
 
-  if (options._sort) {
-    const sortKey = options._sort
-    const order = options._order === 'desc' ? -1 : 1
-
+  if (sort === 'name') {
     products.sort((a, b) => {
-      if (a[sortKey] > b[sortKey]) return order
-      if (a[sortKey] < b[sortKey]) return -order
-      return 0
+      if (order === 'desc') {
+        return String(b.name).localeCompare(String(a.name))
+      }
+
+      return String(a.name).localeCompare(String(b.name))
     })
   }
 
-  return makeListResponse(products)
+  if (sort === 'price') {
+    products.sort((a, b) => {
+      if (order === 'desc') {
+        return Number(b.price) - Number(a.price)
+      }
+
+      return Number(a.price) - Number(b.price)
+    })
+  }
+
+  const total = products.length
+  const startIndex = (page - 1) * limit
+  const paginatedProducts = products.slice(startIndex, startIndex + limit)
+
+  return {
+    data: paginatedProducts,
+    total,
+  }
 }
 
 const registerUser = async (userObject = {}) => {
   await wait()
 
-  const user = {
-    ...DEMO_USER,
-    id: Date.now(),
-    name: userObject.name || userObject.login || userObject.email || 'Demo User',
-    login: userObject.login || userObject.email || 'demo',
-    email: userObject.email || 'demo@example.com',
-    ...userObject,
+  const users = getUsers()
+  const email = userObject.email
+  const password = userObject.password
+
+  const userExists = users.find((user) => user.email === email)
+
+  if (userExists) {
+    return {
+      status: 'exists',
+    }
   }
 
-  localStorage.setItem('demoUser', JSON.stringify(user))
-  saveCurrentUser(user)
+  const newUser = {
+    email,
+    password,
+  }
+
+  users.push(newUser)
+  saveUsers(users)
 
   return {
-    success: true,
-    user,
-    currentUser: user,
-    email: user.email,
-    login: user.login,
-    name: user.name,
+    status: 'registered',
   }
 }
 
 const loginUser = async (userObject = {}) => {
   await wait()
 
-  let savedUser = null
+  const users = getUsers()
+  const email = userObject.email
+  const password = userObject.password
 
-  try {
-    savedUser = JSON.parse(localStorage.getItem('demoUser') || 'null')
-  } catch {
-    savedUser = null
+  const foundUser = users.find((user) => user.email === email && user.password === password)
+
+  if (!foundUser) {
+    return {
+      status: 'notlogged',
+    }
   }
 
-  const user = {
-    ...DEMO_USER,
-    ...(savedUser || {}),
-    email: userObject.email || savedUser?.email || DEMO_USER.email,
-    login: userObject.login || userObject.email || savedUser?.login || DEMO_USER.login,
+  const currentUser = {
+    status: 'logged',
+    email: foundUser.email,
   }
 
-  saveCurrentUser(user)
+  saveCurrentUser(currentUser)
 
-  return {
-    success: true,
-    user,
-    currentUser: user,
-    email: user.email,
-    login: user.login,
-    name: user.name,
-  }
+  return currentUser
 }
 
 const logoutUser = async () => {
   await wait()
 
-  localStorage.removeItem('currentUser')
+  localStorage.removeItem(CURRENT_USER_KEY)
 
   return {
-    success: true,
-    user: null,
-    currentUser: null,
+    status: 'logout',
   }
 }
 
 const getCurrentUser = async () => {
   await wait()
 
-  const user = getCurrentUserFromStorage()
+  const currentUser = getCurrentUserFromStorage()
+
+  if (!currentUser || !currentUser.email) {
+    return {
+      status: 'notauthorized',
+    }
+  }
 
   return {
-    ...user,
-    user,
-    currentUser: user,
+    status: 'authorized',
+    email: currentUser.email,
   }
 }
 
@@ -246,80 +218,92 @@ const getCategories = async () => {
   const data = await getData()
 
   if (Array.isArray(data.categories)) {
-    return makeListResponse(data.categories)
+    return data.categories
   }
 
-  const products = getArray(data, 'products')
-  const categories = [...new Set(products.map((product) => product.category).filter(Boolean))]
+  const products = Array.isArray(data.products) ? data.products : []
 
-  return makeListResponse(categories)
+  return [...new Set(products.map((product) => product.category).filter(Boolean))]
 }
 
 const getSimilarProducts = async (category, id) => {
   const data = await getData()
-  const products = getArray(data, 'products')
+  const products = Array.isArray(data.products) ? data.products : []
 
-  const similarProducts = products.filter((product) => {
-    return String(product.category) === String(category) && String(product.id) !== String(id)
-  })
-
-  return makeListResponse(similarProducts)
+  return products
+    .filter((product) => String(product.category) === String(category) && String(product.id) !== String(id))
+    .sort((a, b) => Number(b.price) - Number(a.price))
+    .slice(0, 3)
 }
 
 const getCart = async () => {
   await wait()
 
-  return makeCartResponse(getCartFromStorage())
+  return {
+    products: getCartFromStorage(),
+  }
 }
 
-const postCartProduct = async (productObject = {}) => {
+const postCartProduct = async (productObject) => {
   await wait()
 
   const cart = getCartFromStorage()
 
-  const existingProduct = cart.find((item) => String(item.id) === String(productObject.id))
-
-  if (existingProduct) {
-    existingProduct.quantity = Number(existingProduct.quantity || 1) + 1
-  } else {
-    cart.push({
-      ...productObject,
-      quantity: Number(productObject.quantity || 1),
-    })
-  }
-
+  cart.push(productObject)
   saveCartToStorage(cart)
 
-  return makeCartResponse(cart)
+  return {
+    status: 'added',
+    products: cart,
+  }
 }
 
 const deleteCartProduct = async (productId) => {
   await wait()
 
-  const cart = getCartFromStorage().filter((item) => String(item.id) !== String(productId))
+  const cart = getCartFromStorage()
+  const index = cart.findIndex((product) => String(product.id) === String(productId))
+
+  if (index !== -1) {
+    cart.splice(index, 1)
+  }
 
   saveCartToStorage(cart)
 
-  return makeCartResponse(cart)
+  return {
+    status: 'deleted',
+    products: cart,
+  }
 }
 
 const updateCartProduct = async (productId, quantity) => {
   await wait()
 
-  const cart = getCartFromStorage().map((item) => {
-    if (String(item.id) === String(productId)) {
-      return {
-        ...item,
-        quantity: Number(quantity),
-      }
-    }
+  const data = await getData()
+  const allProducts = Array.isArray(data.products) ? data.products : []
 
-    return item
-  })
+  let cart = getCartFromStorage()
+
+  const existingProducts = cart.filter((product) => String(product.id) === String(productId))
+  const productTemplate =
+    existingProducts[0] || allProducts.find((product) => String(product.id) === String(productId))
+
+  cart = cart.filter((product) => String(product.id) !== String(productId))
+
+  const safeQuantity = Math.max(0, Number(quantity) || 0)
+
+  if (productTemplate) {
+    for (let i = 0; i < safeQuantity; i++) {
+      cart.push(productTemplate)
+    }
+  }
 
   saveCartToStorage(cart)
 
-  return makeCartResponse(cart)
+  return {
+    status: 'updated',
+    products: cart,
+  }
 }
 
 export {
