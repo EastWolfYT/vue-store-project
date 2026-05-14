@@ -34,14 +34,14 @@ const getPromotion = async (id) => {
   const data = await getData()
   const promotions = getArray(data, 'promotions')
 
-  return promotions.find((promotion) => String(promotion.id) === String(id))
+  return promotions.find((promotion) => String(promotion.id) === String(id)) || null
 }
 
 const getProduct = async (id) => {
   const data = await getData()
   const products = getArray(data, 'products')
 
-  return products.find((product) => String(product.id) === String(id))
+  return products.find((product) => String(product.id) === String(id)) || null
 }
 
 const getProducts = async (options = {}) => {
@@ -57,8 +57,9 @@ const getProducts = async (options = {}) => {
   }
 
   if (options.category) {
-    products = products.filter((product) =>
-      String(product.category || '').toLowerCase() === String(options.category).toLowerCase(),
+    products = products.filter(
+      (product) =>
+        String(product.category || '').toLowerCase() === String(options.category).toLowerCase(),
     )
   }
 
@@ -79,12 +80,20 @@ const getProducts = async (options = {}) => {
 const registerUser = async (userObject) => {
   await wait()
 
-  localStorage.setItem('demoUser', JSON.stringify(userObject))
-  localStorage.setItem('currentUser', JSON.stringify(userObject))
+  const user = {
+    id: Date.now(),
+    name: userObject.name || userObject.email || 'Demo User',
+    email: userObject.email || 'demo@example.com',
+    login: userObject.login || userObject.email || 'demo',
+    ...userObject,
+  }
+
+  localStorage.setItem('demoUser', JSON.stringify(user))
+  localStorage.setItem('currentUser', JSON.stringify(user))
 
   return {
     success: true,
-    user: userObject,
+    user,
   }
 }
 
@@ -93,10 +102,13 @@ const loginUser = async (userObject) => {
 
   const savedUser = JSON.parse(localStorage.getItem('demoUser') || 'null')
 
-  const user = savedUser || {
-    email: userObject.email,
-    name: 'Demo User',
-  }
+  const user =
+    savedUser || {
+      id: 1,
+      name: 'Demo User',
+      email: userObject?.email || 'demo@example.com',
+      login: userObject?.login || userObject?.email || 'demo',
+    }
 
   localStorage.setItem('currentUser', JSON.stringify(user))
 
@@ -119,7 +131,18 @@ const logoutUser = async () => {
 const getCurrentUser = async () => {
   await wait()
 
-  return JSON.parse(localStorage.getItem('currentUser') || 'null')
+  const savedUser = JSON.parse(localStorage.getItem('currentUser') || 'null')
+
+  if (savedUser) {
+    return savedUser
+  }
+
+  return {
+    id: 1,
+    name: 'Demo User',
+    email: 'demo@example.com',
+    login: 'demo',
+  }
 }
 
 const getCategories = async () => {
@@ -145,17 +168,29 @@ const getSimilarProducts = async (category, id) => {
 }
 
 const getCartFromStorage = () => {
-  return JSON.parse(localStorage.getItem('cart') || '[]')
+  const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+
+  if (Array.isArray(cart)) {
+    return cart
+  }
+
+  return []
 }
 
 const saveCartToStorage = (cart) => {
-  localStorage.setItem('cart', JSON.stringify(cart))
+  localStorage.setItem('cart', JSON.stringify(Array.isArray(cart) ? cart : []))
 }
 
 const getCart = async () => {
   await wait()
 
-  return getCartFromStorage()
+  const cart = getCartFromStorage()
+
+  if (Array.isArray(cart)) {
+    return cart
+  }
+
+  return []
 }
 
 const postCartProduct = async (productObject) => {
